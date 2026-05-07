@@ -31,17 +31,13 @@ async function run(context = github.context) {
         const entity = (issue || pr)!
         const author = entity.user.login
         const octokit = getOctokit()
-        const response = await octokit.rest.issues.listForRepo({
-          ...context.repo,
-          state: 'all',
-          creator: author,
+        const { owner, repo } = context.repo
+        const type = issue != null ? 'issue' : 'pr'
+        const res = await octokit.rest.search.issuesAndPullRequests({
+          q: `is:${type} author:${author} repo:${owner}/${repo}`,
         })
 
-        const list = response.data.filter((data) =>
-          issue != null ? !data.pull_request : data.pull_request,
-        )
-
-        if (list.length === 1) {
+        if (res.data.total_count === 1) {
           const { data } = await octokit.rest.issues.createComment({
             ...context.repo,
             issue_number: entity.number,
